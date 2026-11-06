@@ -104,6 +104,18 @@ files and would carry a prior session's changes forward). Find one staged in you
 run the kanban, migrate docs, and commit/publish through the secret scan.
 <!-- memophant:end -->
 
+## Build
+
+Never build signed. Use `./scripts/local-build.sh` (Debug, unsigned, no Apple ID) — it is the
+default local build path. Do NOT use `./scripts/build-detached.sh`, which signs (and requires a
+"Mac Development" certificate). For a raw compile:
+
+```bash
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
+  -project scarf/scarf.xcodeproj -scheme scarf -configuration Debug \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+```
+
 ## Scarf project enrichment (added by template-author, 2026-10-31)
 
 This directory is the Scarf app repo itself AND a registered Scarf project (tenant `scarf:scarf`, id `CDD496D4-EF55-404F-82F8-88883E85402E`).
