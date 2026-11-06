@@ -15,7 +15,6 @@ struct KanbanBoardView: View {
     @State private var viewModel: KanbanBoardViewModel
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.hermesCapabilities) private var capabilitiesStore
-    @Environment(\.colorScheme) private var colorScheme
 
     /// When non-nil, a project board hosts this view. Drives header
     /// chrome (subtitle, hidden tenant filter) and create-sheet
@@ -461,33 +460,6 @@ struct KanbanBoardView: View {
             .padding(ScarfSpace.s4)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Recede the board while the inspector is open — blur to drop the
-        // card detail out of focus, dim to lower its contrast. Kept small
-        // (radius 2) because the board repaints on every 5 s poll and a
-        // heavier blur would re-render visibly on each tick.
-        .blur(radius: inspectorTaskId == nil ? 0 : 2)
-        // Purely visual. The inspector is a SIDE PANE by design — the user
-        // can keep dragging cards with it open — so the dim must not
-        // swallow clicks.
-        .overlay {
-            if inspectorTaskId != nil {
-                Rectangle()
-                    .fill(Color.black.opacity(colorScheme == .dark ? 0.24 : 0.07))
-                    .allowsHitTesting(false)
-                    .accessibilityHidden(true)
-            }
-        }
-        // A side pane has no scrim to catch an outside click, so a click
-        // that lands on the board ITSELF closes the inspector. A card's own
-        // Button is a descendant and wins over this ancestor gesture, so
-        // tapping a second card switches the inspector instead of closing
-        // it — preserving the non-modal behavior.
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard inspectorTaskId != nil else { return }
-            inspectorTaskId = nil
-        }
-        .animation(ScarfAnimation.fast, value: inspectorTaskId == nil)
     }
 
     // MARK: - Inspector
