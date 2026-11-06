@@ -4,7 +4,7 @@ import ScarfDesign
 
 /// Side-pane inspector for one Kanban task. Rendered alongside the board
 /// (not modally) so the user can drag another card immediately after
-/// closing this one. 420pt wide; slides in from the trailing edge.
+/// closing this one. 840pt wide; slides in from the trailing edge.
 struct KanbanInspectorPane: View {
     @State private var viewModel: KanbanTaskDetailViewModel
     let availableAssignees: [HermesKanbanAssignee]
@@ -125,7 +125,7 @@ struct KanbanInspectorPane: View {
             ScarfDivider()
             actionBar
         }
-        .frame(width: 420)
+        .frame(width: 840)
         .frame(maxHeight: .infinity)
         .background(ScarfColor.backgroundPrimary)
         .task {
@@ -514,17 +514,21 @@ struct KanbanInspectorPane: View {
     @ViewBuilder
     private func bodySection(_ task: HermesKanbanTask) -> some View {
         if let body = task.body, !body.isEmpty {
-            // PLAIN text, deliberately. A card body is written by whatever
-            // worker touched the card, and `AttributedString(markdown:)`
-            // renders links with no scheme allowlist — a worker could plant
-            // `[Approve](javascript:…)`-shaped bait in the inspector. Comment
-            // bodies right below render as plain `Text` for the same reason,
-            // and so does the iOS twin (`ScarfGoKanbanDetailSheet`'s body
-            // block) — the three must not diverge. Rendered markdown goes
-            // through `MarkdownContentView`, which carries the allowlist.
-            Text(body)
-                .scarfStyle(.body)
-                .foregroundStyle(ScarfColor.foregroundPrimary)
+            // Markdown, through `MarkdownContentView` ONLY. A card body is
+            // written by whatever worker touched the card, so it is untrusted
+            // input: bare `AttributedString(markdown:)` renders `[go](…)` as a
+            // live link with an arbitrary scheme and the default `openURL`
+            // hands `javascript:` / `data:` / `file:` straight to the system.
+            // `MarkdownContentView` applies `.scarfSafeLinks()`, which allows
+            // only http/https/mailto — that allowlist is the whole reason
+            // rendered markdown is acceptable on this surface.
+            //
+            // The iOS twin (`ScarfGoKanbanDetailSheet`'s body block) still
+            // renders plain `Text`: `MarkdownContentView` imports Marker,
+            // which is linked only to the macOS target and declares a macOS
+            // platform floor. That divergence is deliberate — see the comment
+            // there before changing either side.
+            MarkdownContentView(content: body)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .textSelection(.enabled)
         } else {
@@ -541,7 +545,13 @@ struct KanbanInspectorPane: View {
                     .scarfStyle(.footnote)
                     .foregroundStyle(ScarfColor.foregroundFaint)
             } else {
-                ForEach(comments) { comment in
+                ForEach(Array(comments.enumerated()), id: \.element.id) { index, comment in
+                    // A hairline between adjacent comments, and only there —
+                    // none above the first or below the last, so a one-comment
+                    // task looks exactly as it did before.
+                    if index > 0 {
+                        ScarfDivider()
+                    }
                     commentRow(comment)
                 }
             }
@@ -559,10 +569,17 @@ struct KanbanInspectorPane: View {
                     .scarfStyle(.caption)
                     .foregroundStyle(ScarfColor.foregroundFaint)
             }
-            Text(comment.body)
-                .scarfStyle(.body)
+            // Same untrusted-input rule as `bodySection`: comments are
+            // worker-authored, so they go through `MarkdownContentView` and
+            // its `scarfSafeLinks` allowlist. The muted foreground stays at
+            // THIS container (the old single-`Text` treatment) so comments
+            // still read as secondary to the task body; the renderer's own
+            // per-block styles (blockquote, code chrome) still win on their
+            // own spans.
+            MarkdownContentView(content: comment.body)
                 .foregroundStyle(ScarfColor.foregroundMuted)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
         }
         .padding(ScarfSpace.s2)
         .background(

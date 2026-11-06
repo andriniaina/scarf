@@ -79,12 +79,23 @@ struct ScarfGoKanbanDetailSheet: View {
                 VStack(alignment: .leading, spacing: 16) {
                     headerCard(detail.task)
                     if let body = detail.task.body, !body.isEmpty {
-                        // PLAIN text, deliberately — parity with the Mac
-                        // inspector's `bodySection`. A card body is written by
-                        // whatever worker touched the card, and
-                        // `AttributedString(markdown:)` renders links with no
-                        // scheme allowlist, so a worker could plant
-                        // `[Approve](javascript:…)`-shaped bait here.
+                        // PLAIN text, deliberately — and now a deliberate
+                        // DIVERGENCE from the Mac inspector, which renders the
+                        // same body through `MarkdownContentView`. On iOS that
+                        // renderer is unavailable: it imports Marker, which the
+                        // Xcode project links only to the macOS target, and
+                        // Marker declares a macOS-only platform floor. Its code
+                        // blocks also use `Color(.textBackgroundColor)`, a
+                        // macOS dynamic color.
+                        //
+                        // Do NOT "restore parity" with a bare
+                        // `AttributedString(markdown:)`: a card body is written
+                        // by whatever worker touched the card, and that path
+                        // renders links with no scheme allowlist, so a worker
+                        // could plant `[Approve](javascript:…)`-shaped bait
+                        // here. Markdown on iOS waits for a cross-platform
+                        // renderer that carries the same `scarfSafeLinks`
+                        // allowlist as the Mac.
                         Text(body)
                             .font(.body)
                     }
