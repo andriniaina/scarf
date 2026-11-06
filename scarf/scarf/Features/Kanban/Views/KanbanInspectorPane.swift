@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import ScarfCore
 import ScarfDesign
@@ -256,6 +257,8 @@ struct KanbanInspectorPane: View {
                                     .fixedSize()
                                     .help("Completion contract set at create time: local-only, OWNER/REPO for publication, or a PR URL whose CI gates completion. Read-only — Hermes has no update verb.")
                             }
+                            cardIdChip(for: task)
+                                .fixedSize()
                             if let tenant = task.tenant, !tenant.isEmpty {
                                 ScarfBadge(verbatim: tenant, kind: .brand)
                                     .fixedSize()
@@ -277,6 +280,31 @@ struct KanbanInspectorPane: View {
             .keyboardShortcut(.cancelAction)
         }
         .padding(ScarfSpace.s4)
+    }
+
+    /// Inline card id — the exact `t_…` id `hermes kanban list` prints.
+    /// Clicking copies `kanban card <id>` so a user can paste it straight
+    /// back into a chat or a dispatch prompt. Styled as a badge so it sits
+    /// in the same chip row as status / workspace / contract.
+    private func cardIdChip(for task: HermesKanbanTask) -> some View {
+        Button {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString("kanban card \(task.id)", forType: .string)
+        } label: {
+            Text(task.id)
+                .font(ScarfFont.monoSmall)
+                .foregroundStyle(ScarfColor.foregroundMuted)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .overlay(
+                    RoundedRectangle(cornerRadius: ScarfRadius.sm, style: .continuous)
+                        .stroke(ScarfColor.borderStrong, lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
+        .help(Text(verbatim: "Click to copy \"kanban card \(task.id)\""))
+        .accessibilityLabel(Text(verbatim: "Card id \(task.id)"))
+        .accessibilityHint(Text(verbatim: "Copies kanban card \(task.id) to the clipboard."))
     }
 
     /// Inline assignee picker. Renders as a clickable badge styled to
