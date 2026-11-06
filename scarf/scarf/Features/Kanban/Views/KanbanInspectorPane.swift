@@ -38,6 +38,7 @@ struct KanbanInspectorPane: View {
 
     @State private var selectedTab: DetailTab = .comments
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var colorScheme
 
     enum DetailTab: String, CaseIterable, Identifiable {
         case comments = "Comments"
@@ -590,9 +591,14 @@ struct KanbanInspectorPane: View {
     private func commentRow(_ comment: HermesKanbanComment) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: ScarfSpace.s2) {
+                // Deterministic per-bot tint so a reader can tell authors
+                // apart at a glance. Decoration only: the name is still
+                // rendered in full and read by VoiceOver, so nothing is
+                // lost if the color is indistinguishable. See
+                // `KanbanBotTint` for the AA-floored tone pairs.
                 Text(comment.author)
                     .scarfStyle(.captionStrong)
-                    .foregroundStyle(ScarfColor.foregroundPrimary)
+                    .foregroundStyle(KanbanBotTint.color(for: comment.author, scheme: colorScheme))
                 Text(comment.createdAt)
                     .scarfStyle(.caption)
                     .foregroundStyle(ScarfColor.foregroundFaint)
